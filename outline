@@ -1,0 +1,12 @@
+## Project outline
+
+- usera -> book room from hotel
+- admin -> going to check reservation/bookings
+- Authentication and authorization -> JWT tokens
+- hotels -> CRUD API -> JSON
+- rooms -> CRUD API -> JSON
+- scripts -> database management -> seeding, migration
+
+## Dependency
+
+go get -u github.com/gofiber/fiber/v2
