@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,21 +12,31 @@ type UserHandler struct {
 	userStore db.UserStore
 }
 
-func NewUserHandler(userStore *db.UserStore) *UserHandler {
+func NewUserHandler(userStore db.UserStore) *UserHandler {
 	return &UserHandler{
-		userStore: *userStore,
+		userStore: userStore,
 	}
 }
 
-func (h *UserHandler) HandlerGetUsers(c *fiber.Ctx) error {
-	id := c.Params("id")
-	user, err := h.userStore.GetUserById(id)
+func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
+	var (
+		id  = c.Params("id")
+		ctx = context.Background()
+	)
+	user, err := h.userStore.GetUserById(ctx, id)
 	if err != nil {
-		return err
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
 	return c.JSON(user)
 }
 
-func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
-	return c.JSON(fmt.Sprintf("id: %s, James", c.Params("id")))
+func (h *UserHandler) HandlerGetUsers(c *fiber.Ctx) error {
+	var (
+		ctx = context.Background()
+	)
+	users := h.userStore.GetUsers(ctx)
+
+	fmt.Println(users)
+
+	return c.JSON(users)
 }
