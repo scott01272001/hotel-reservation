@@ -2,7 +2,7 @@ package api
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/scott/hotel-reservation/db"
@@ -20,13 +20,22 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 }
 
 func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
-	var user types.User
-	err := c.BodyParser(&user)
-	if err != nil {
+	var params types.CreateUserparam
+	if err := c.BodyParser(&params); err != nil {
+		log.Fatal(err)
 		return err
 	}
-	h.userStore.PostUser(context.Background(), &user)
-	return nil
+	user, err := types.NewUserFromParams(&params)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return c.JSON(insertedUser)
 }
 
 func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
@@ -49,8 +58,5 @@ func (h *UserHandler) HandlerGetUsers(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(users)
-
 	return c.JSON(users)
 }
