@@ -40,11 +40,7 @@ func main() {
 	apiv1 := app.Group("/api/v1")
 	apiv1.Get("/users", userHandler.HandlerGetUsers)
 	apiv1.Get("/users/:id", userHandler.HandlerGetUser)
-
-	apiv1.Get("/error", func(c *fiber.Ctx) error {
-		panic("boom!!!!")
-		return nil
-	})
+	apiv1.Post("/users", userHandler.HandlePostUser)
 
 	err = app.Listen(*listenAddr)
 	if err != nil {

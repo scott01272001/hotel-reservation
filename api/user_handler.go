@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/scott/hotel-reservation/db"
+	"github.com/scott/hotel-reservation/types"
 )
 
 type UserHandler struct {
@@ -16,6 +17,16 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 	return &UserHandler{
 		userStore: userStore,
 	}
+}
+
+func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
+	var user types.User
+	err := c.BodyParser(&user)
+	if err != nil {
+		return err
+	}
+	h.userStore.PostUser(context.Background(), &user)
+	return nil
 }
 
 func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
@@ -34,7 +45,10 @@ func (h *UserHandler) HandlerGetUsers(c *fiber.Ctx) error {
 	var (
 		ctx = context.Background()
 	)
-	users := h.userStore.GetUsers(ctx)
+	users, err := h.userStore.GetUsers(ctx)
+	if err != nil {
+		return err
+	}
 
 	fmt.Println(users)
 
