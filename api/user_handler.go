@@ -26,8 +26,12 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := types.ValidateStruct(params); err != nil {
-		return c.JSON(err.Error())
+	errors, err := types.ValidateStruct(&params)
+	if err != nil {
+		return err
+	}
+	if len(errors) != 0 {
+		return c.JSON(errors)
 	}
 
 	user, err := types.NewUserFromParams(&params)
@@ -35,6 +39,7 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 		log.Fatal(err)
 		return err
 	}
+
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		log.Fatal(err)
