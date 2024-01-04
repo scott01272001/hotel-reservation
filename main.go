@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 
@@ -41,6 +42,10 @@ func main() {
 	apiv1.Get("/users", userHandler.HandlerGetUsers)
 	apiv1.Get("/users/:id", userHandler.HandlerGetUser)
 	apiv1.Post("/users", userHandler.HandlePostUser)
+
+	apiv1.Get("/error", func(c *fiber.Ctx) error {
+		return errors.New("asd")
+	})
 
 	err = app.Listen(*listenAddr)
 	if err != nil {

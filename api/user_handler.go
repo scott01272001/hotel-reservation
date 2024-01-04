@@ -25,6 +25,11 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 		log.Fatal(err)
 		return err
 	}
+
+	if err := types.ValidateStruct(params); err != nil {
+		return c.JSON(err.Error())
+	}
+
 	user, err := types.NewUserFromParams(&params)
 	if err != nil {
 		log.Fatal(err)
