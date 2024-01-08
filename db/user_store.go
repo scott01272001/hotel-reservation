@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/scott/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,11 +16,40 @@ type UserStore interface {
 	GetUserById(context.Context, string) (*types.User, error)
 	GetUsers(context.Context) (*[]types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
+	DeleteUser(context.Context, string) error
+	UpdateUser(context.Context, string, *types.User) (*types.User, error)
 }
 
 type MongoUserStore struct {
 	client *mongo.Client
 	coll   *mongo.Collection
+}
+
+func ToBson[param types.UpdateUserParams](update param) {
+	// using reflect to get all fields of the 'update' then insert the field name and value to a map if the value of the field is not empty
+
+}
+
+func (s *MongoUserStore) UpdateUser(ctx context.Context, id string, update *types.UpdateUserParams) (*types.User, error) {
+	_, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (s *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": oid}
+	res, err := s.coll.DeleteOne(ctx, filter)
+	if res.DeletedCount == 0 {
+		return fmt.Errorf("'%s' not exist", id)
+	}
+	return err
 }
 
 func (s *MongoUserStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {

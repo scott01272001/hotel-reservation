@@ -9,6 +9,14 @@ const (
 	bcryptCost = bcrypt.DefaultCost
 )
 
+type UpdateUserParams struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email" validate:"omitempty,email"`
+}
+
+type UpdateUserParamType UpdateUserParams
+
 type CreateUserparam struct {
 	FirstName string `json:"firstName" validate:"required"`
 	LastName  string `json:"lastName" validate:"required"`

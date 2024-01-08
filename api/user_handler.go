@@ -1,12 +1,12 @@
 package api
 
 import (
-	"context"
-	"log"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/scott/hotel-reservation/db"
 	"github.com/scott/hotel-reservation/types"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserHandler struct {
@@ -20,17 +20,28 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 }
 
 func (h *UserHandler) HandleDeleteUser(c *fiber.Ctx) error {
-
+	id := c.Params("id")
+	if err := h.userStore.DeleteUser(c.Context(), id); err != nil {
+		return err
+	}
+	return c.JSON(map[string]string{"deleted": id})
 }
 
 func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
+	// var (
+	// 	params types.UpdateUserParams
+	// 	userId = c.Params("id")
+	// )
+	// if err := c.BodyParser(&params); err != nil {
+	// 	return err
+	// }
 
+	return nil
 }
 
 func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 	var params types.CreateUserparam
 	if err := c.BodyParser(&params); err != nil {
-		log.Fatal(err)
 		return err
 	}
 
@@ -44,35 +55,30 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 
 	user, err := types.NewUserFromParams(&params)
 	if err != nil {
-		log.Fatal(err)
 		return err
 	}
 
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
-		log.Fatal(err)
 		return err
 	}
 	return c.JSON(insertedUser)
 }
 
 func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
-	var (
-		id  = c.Params("id")
-		ctx = context.Background()
-	)
-	user, err := h.userStore.GetUserById(ctx, id)
+	id := c.Params("id")
+	user, err := h.userStore.GetUserById(c.Context(), id)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return c.JSON(map[string]string{"error": "not found"})
+		}
+		return err
 	}
 	return c.JSON(user)
 }
 
 func (h *UserHandler) HandlerGetUsers(c *fiber.Ctx) error {
-	var (
-		ctx = context.Background()
-	)
-	users, err := h.userStore.GetUsers(ctx)
+	users, err := h.userStore.GetUsers(c.Context())
 	if err != nil {
 		return err
 	}
