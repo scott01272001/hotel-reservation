@@ -35,6 +35,15 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&params); err != nil {
 		return err
 	}
+
+	errors, err := types.ValidateStruct(&params)
+	if err != nil {
+		return err
+	}
+	if len(errors) != 0 {
+		return c.JSON(errors)
+	}
+
 	updated, err := h.userStore.UpdateUser(c.Context(), userId, &params)
 	if err != nil {
 		return err
