@@ -27,9 +27,9 @@ type CreateUserparam struct {
 type User struct {
 	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	FirstName         string             `bson:"firstName" json:"firstName"`
-	LastName          string             `bson:"lasttName" json:"lastName"`
+	LastName          string             `bson:"lastName" json:"lastName"`
 	Email             string             `bson:"email" json:"email"`
-	EncryptedPasswrod string             `bson:"envryptedPassword" json:"-"`
+	EncryptedPasswrod string             `bson:"encryptedPassword" json:"-"`
 }
 
 func NewUserFromParams(params *CreateUserparam) (*User, error) {

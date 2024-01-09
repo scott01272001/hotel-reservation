@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/scott/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,29 @@ type UserStore interface {
 	GetUsers(context.Context) (*[]types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
 	DeleteUser(context.Context, string) error
-	UpdateUser(context.Context, string, *types.User) (*types.User, error)
+	UpdateUser(context.Context, string, *types.UpdateUserParams) (*types.User, error)
+}
+
+func ToBson[param types.UpdateUserParams](update *param) *bson.M {
+	result := bson.M{}
+	val := reflect.ValueOf(update)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	typ := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		if !field.IsZero() {
+			jsonTag := typ.Field(i).Tag.Get("json")
+			if jsonTag != "" {
+				result[jsonTag] = field.Interface()
+			} else {
+				result[typ.Field(i).Name] = field.Interface()
+			}
+		}
+	}
+	return &result
 }
 
 type MongoUserStore struct {
@@ -25,17 +48,28 @@ type MongoUserStore struct {
 	coll   *mongo.Collection
 }
 
-func ToBson[param types.UpdateUserParams](update param) {
-	// using reflect to get all fields of the 'update' then insert the field name and value to a map if the value of the field is not empty
-
-}
-
-func (s *MongoUserStore) UpdateUser(ctx context.Context, id string, update *types.UpdateUserParams) (*types.User, error) {
-	_, err := primitive.ObjectIDFromHex(id)
+func (s *MongoUserStore) UpdateUser(ctx context.Context, id string, params *types.UpdateUserParams) (*types.User, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+
+	updateData := ToBson(params)
+	update := bson.D{primitive.E{Key: "$set", Value: &updateData}}
+
+	res, err := s.coll.UpdateByID(ctx, oid, update)
+	if err != nil {
+		return nil, err
+	}
+	if res.MatchedCount == 0 {
+		return nil, fmt.Errorf("'%s' not exist", id)
+	}
+
+	var updated types.User
+	if err := s.coll.FindOne(ctx, bson.M{"_id": oid}).Decode(&updated); err != nil {
+		return nil, err
+	}
+	return &updated, nil
 }
 
 func (s *MongoUserStore) DeleteUser(ctx context.Context, id string) error {

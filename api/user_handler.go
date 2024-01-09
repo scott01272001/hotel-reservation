@@ -28,15 +28,18 @@ func (h *UserHandler) HandleDeleteUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
-	// var (
-	// 	params types.UpdateUserParams
-	// 	userId = c.Params("id")
-	// )
-	// if err := c.BodyParser(&params); err != nil {
-	// 	return err
-	// }
-
-	return nil
+	var (
+		params types.UpdateUserParams
+		userId = c.Params("id")
+	)
+	if err := c.BodyParser(&params); err != nil {
+		return err
+	}
+	updated, err := h.userStore.UpdateUser(c.Context(), userId, &params)
+	if err != nil {
+		return err
+	}
+	return c.JSON(updated)
 }
 
 func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {

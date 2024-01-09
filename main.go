@@ -42,6 +42,7 @@ func main() {
 	apiv1.Get("/users/:id", userHandler.HandlerGetUser)
 	apiv1.Post("/users", userHandler.HandlePostUser)
 	apiv1.Delete("/users/:id", userHandler.HandleDeleteUser)
+	apiv1.Put("/users/:id", userHandler.HandlePutUser)
 
 	err = app.Listen(*listenAddr)
 	if err != nil {
