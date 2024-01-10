@@ -22,7 +22,7 @@ func errorHandler(ctx *fiber.Ctx, err error) error {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	listenAddr := flag.String("listenAddr", ":8082", "The listen address of the API server")
+	listenAddr := flag.String("listenAddr", ":8032", "The listen address of the API server")
 	flag.Parse()
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
