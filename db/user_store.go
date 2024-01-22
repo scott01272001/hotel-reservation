@@ -130,9 +130,9 @@ func (s *MongoUserStore) GetUsers(ctx context.Context) (*[]types.User, error) {
 	return &users, nil
 }
 
-func NewMongoUserStore(client *mongo.Client, dbname string) *MongoUserStore {
+func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
 	return &MongoUserStore{
 		client: client,
-		coll:   client.Database(dbname).Collection(userColl),
+		coll:   client.Database(DBNAME).Collection(userColl),
 	}
 }

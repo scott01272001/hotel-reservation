@@ -30,19 +30,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client, db.DBNAME))
+	// handlers init
+	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
+
+	hotelStore := db.NewMongoHotelStore(client)
+	roomStore := db.NewMongoRoomStore(client, hotelStore)
+	hotelHandler := api.NewHotelHandler(hotelStore, roomStore)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: errorHandler,
 	})
 	app.Use(recover.New())
-
 	apiv1 := app.Group("/api/v1")
+
+	// user handlers
 	apiv1.Get("/users", userHandler.HandlerGetUsers)
 	apiv1.Get("/users/:id", userHandler.HandlerGetUser)
 	apiv1.Post("/users", userHandler.HandlePostUser)
 	apiv1.Delete("/users/:id", userHandler.HandleDeleteUser)
 	apiv1.Put("/users/:id", userHandler.HandlePutUser)
+
+	// hotel handlers
+	apiv1.Get("/hotels", hotelHandler.HandleGetHotels)
 
 	err = app.Listen(*listenAddr)
 	if err != nil {
