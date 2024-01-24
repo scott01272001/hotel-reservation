@@ -36,17 +36,30 @@ func (s *MongoRoomStore) DeleteAll(ctx context.Context) error {
 }
 
 func (s *MongoRoomStore) InsertRoom(ctx context.Context, room *types.Room) (*types.Room, error) {
-	res, err := s.coll.InsertOne(ctx, room)
+	session, err := s.client.StartSession()
 	if err != nil {
 		return nil, err
 	}
-	room.ID = res.InsertedID.(primitive.ObjectID)
+	defer session.EndSession(context.TODO())
 
-	filter := bson.M{"_id": room.HotelID}
-	update := bson.M{"$push": bson.M{"rooms": room.ID}}
-	if err := s.HotelStore.Update(ctx, filter, update); err != nil {
+	res, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		res, err := s.coll.InsertOne(ctx, room)
+		if err != nil {
+			return nil, err
+		}
+		room.ID = res.InsertedID.(primitive.ObjectID)
+
+		filter := bson.M{"_id": room.HotelID}
+		update := bson.M{"$push": bson.M{"rooms": room.ID}}
+		if err := s.HotelStore.Update(ctx, filter, update); err != nil {
+			return nil, err
+		}
+
+		return room, nil
+	})
+	if err != nil {
 		return nil, err
 	}
-
+	room = res.(*types.Room)
 	return room, nil
 }
