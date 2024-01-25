@@ -6,7 +6,6 @@ import (
 
 	"github.com/scott/hotel-reservation/db"
 	"github.com/scott/hotel-reservation/types"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -36,7 +35,7 @@ func seedHotel(name, location string, rating int) {
 	hotel := types.Hotel{
 		Name:     name,
 		Location: location,
-		Rooms:    []primitive.ObjectID{},
+		Rooms:    []string{},
 		Rating:   rating,
 	}
 	rooms := []types.Room{

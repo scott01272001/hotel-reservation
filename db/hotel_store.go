@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/scott/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,6 +17,7 @@ type HotelStore interface {
 	Update(context.Context, bson.M, bson.M) error
 	DeleteAll(context.Context) error
 	GetHotels(context.Context, bson.M) (*[]types.Hotel, error)
+	GetRoomsByHotelId(context.Context, string) (*[]types.Room, error)
 }
 
 type MongoHotelStore struct {
@@ -28,6 +30,26 @@ func NewMongoHotelStore(client *mongo.Client) *MongoHotelStore {
 		client: client,
 		coll:   client.Database(DBNAME).Collection(hotelColl),
 	}
+}
+
+func (s *MongoHotelStore) GetRoomsByHotelId(ctx context.Context, id string) (*[]types.Room, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	filter := bson.M{"_id": oid}
+	// projectinon := bson.D{
+	// 	primitive.E{Key: "rooms", Value: 1},
+	// }
+	cur, err := s.coll.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	var rooms []types.Room
+	if err := cur.All(ctx, &rooms); err != nil {
+		return nil, err
+	}
+	return &rooms, nil
 }
 
 func (s *MongoHotelStore) GetHotels(ctx context.Context, filter bson.M) (*[]types.Hotel, error) {
@@ -48,7 +70,8 @@ func (s *MongoHotelStore) DeleteAll(ctx context.Context) error {
 }
 
 func (s *MongoHotelStore) Update(ctx context.Context, filter bson.M, update bson.M) error {
-	_, err := s.coll.UpdateOne(ctx, filter, update)
+	res, err := s.coll.UpdateOne(ctx, filter, update)
+	fmt.Println(res.MatchedCount)
 	return err
 }
 
@@ -57,6 +80,6 @@ func (s *MongoHotelStore) InsertHotel(ctx context.Context, hotel *types.Hotel) (
 	if err != nil {
 		return nil, err
 	}
-	hotel.ID = res.InsertedID.(primitive.ObjectID)
+	hotel.ID = res.InsertedID.(primitive.ObjectID).Hex()
 	return hotel, nil
 }

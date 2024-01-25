@@ -52,6 +52,7 @@ func main() {
 
 	// hotel handlers
 	apiv1.Get("/hotels", hotelHandler.HandleGetHotels)
+	apiv1.Get("/hotels/:id/rooms", hotelHandler.HandleGetRooms)
 
 	err = app.Listen(*listenAddr)
 	if err != nil {
