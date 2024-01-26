@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/scott/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,20 +32,34 @@ func NewMongoHotelStore(client *mongo.Client) *MongoHotelStore {
 }
 
 func (s *MongoHotelStore) GetRoomsByHotelId(ctx context.Context, id string) (*[]types.Room, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
+	hotelID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
-	filter := bson.M{"_id": oid}
-	// projectinon := bson.D{
-	// 	primitive.E{Key: "rooms", Value: 1},
-	// }
-	cur, err := s.coll.Find(ctx, filter)
+
+	pipeline := mongo.Pipeline{
+		bson.D{{"$match", bson.D{{"_id", hotelID}}}},
+		bson.D{{"$lookup", bson.D{
+			{"from", "rooms"},
+			{"let", bson.D{{"roomIds", "$rooms"}}},
+			{"pipeline", bson.A{bson.D{
+				{"$match", bson.D{{"$expr", bson.D{{"$in", bson.A{"$_id", bson.D{{"$map", bson.D{
+					{"input", "$$roomIds"},
+					{"as", "roomId"},
+					{"in", bson.D{{"$toObjectId", "$$roomId"}}},
+				}}}}}}}}},
+			}}},
+			{"as", "roomDetails"},
+		}}},
+		bson.D{{"$unwind", "$roomDetails"}},
+		bson.D{{"$replaceRoot", bson.D{{"newRoot", "$roomDetails"}}}},
+	}
+	cur, err := s.coll.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
 	var rooms []types.Room
-	if err := cur.All(ctx, &rooms); err != nil {
+	if err = cur.All(context.TODO(), &rooms); err != nil {
 		return nil, err
 	}
 	return &rooms, nil
@@ -70,8 +83,7 @@ func (s *MongoHotelStore) DeleteAll(ctx context.Context) error {
 }
 
 func (s *MongoHotelStore) Update(ctx context.Context, filter bson.M, update bson.M) error {
-	res, err := s.coll.UpdateOne(ctx, filter, update)
-	fmt.Println(res.MatchedCount)
+	_, err := s.coll.UpdateOne(ctx, filter, update)
 	return err
 }
 
