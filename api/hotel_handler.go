@@ -1,25 +1,37 @@
 package api
 
 import (
+	"errors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/scott/hotel-reservation/db"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type HotelHandler struct {
-	roomStore  db.RoomStore
-	hotelStore db.HotelStore
+	store *db.Store
 }
 
-func NewHotelHandler(hs db.HotelStore, rs db.RoomStore) *HotelHandler {
+func NewHotelHandler(store *db.Store) *HotelHandler {
 	return &HotelHandler{
-		hotelStore: hs,
-		roomStore:  rs,
+		store: store,
 	}
+}
+
+func (h *HotelHandler) HandleGetHotel(c *fiber.Ctx) error {
+	id := c.Params("id")
+	hotel, err := h.store.Hotel.GetHotelById(c.Context(), id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return c.JSON(map[string]string{"error": "not found"})
+		}
+		return err
+	}
+	return c.JSON(hotel)
 }
 
 func (h *HotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	id := c.Params("id")
-	rooms, err := h.hotelStore.GetRoomsByHotelId(c.Context(), id)
+	rooms, err := h.store.Hotel.GetRoomsByHotelId(c.Context(), id)
 	if err != nil {
 		return err
 	}
@@ -28,7 +40,7 @@ func (h *HotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 }
 
 func (h *HotelHandler) HandleGetHotels(c *fiber.Ctx) error {
-	hotels, err := h.hotelStore.GetHotels(c.Context(), nil)
+	hotels, err := h.store.Hotel.GetHotels(c.Context(), nil)
 	if err != nil {
 		return err
 	}

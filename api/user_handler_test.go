@@ -54,7 +54,7 @@ func TestPostAndGetUser(t *testing.T) {
 	app.Get("/get/:id", userHandler.HandlerGetUser)
 
 	var userId string
-	param := types.CreateUserparam{
+	param := types.CreateUserParam{
 		FirstName: "test",
 		LastName:  "test",
 		Email:     "test@gmail.com",

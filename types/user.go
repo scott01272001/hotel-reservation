@@ -16,7 +16,7 @@ type UpdateUserParams struct {
 
 type UpdateUserParamType UpdateUserParams
 
-type CreateUserparam struct {
+type CreateUserParam struct {
 	FirstName string `json:"firstName" validate:"required"`
 	LastName  string `json:"lastName" validate:"required"`
 	Email     string `json:"email" validate:"required,email"`
@@ -31,7 +31,7 @@ type User struct {
 	EncryptedPasswrod string `bson:"encryptedPassword" json:"-"`
 }
 
-func NewUserFromParams(params *CreateUserparam) (*User, error) {
+func NewUserFromParams(params *CreateUserParam) (*User, error) {
 	encpw, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcryptCost)
 	if err != nil {
 		return nil, err

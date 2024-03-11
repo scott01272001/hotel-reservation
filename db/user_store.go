@@ -54,6 +54,13 @@ type MongoUserStore struct {
 	coll   *mongo.Collection
 }
 
+func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
+	return &MongoUserStore{
+		client: client,
+		coll:   client.Database(DBNAME).Collection(userColl),
+	}
+}
+
 func (s *MongoUserStore) Drop(ctx context.Context) error {
 	fmt.Println("---- dropping users collection")
 	return s.coll.Drop(ctx)
@@ -128,11 +135,4 @@ func (s *MongoUserStore) GetUsers(ctx context.Context) (*[]types.User, error) {
 		return nil, err
 	}
 	return &users, nil
-}
-
-func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
-	return &MongoUserStore{
-		client: client,
-		coll:   client.Database(DBNAME).Collection(userColl),
-	}
 }

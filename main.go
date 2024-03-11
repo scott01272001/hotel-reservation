@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/scott/hotel-reservation/api/middeware"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/scott/hotel-reservation/api"
 	"github.com/scott/hotel-reservation/db"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,18 +30,30 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// handlers init
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
+	var (
+		// store init
+		hotelStore = db.NewMongoHotelStore(client)
+		roomStore  = db.NewMongoRoomStore(client, hotelStore)
+		userStore  = db.NewMongoUserStore(client)
+		store      = db.Store{
+			Hotel: hotelStore,
+			Room:  roomStore,
+			User:  userStore,
+		}
 
-	hotelStore := db.NewMongoHotelStore(client)
-	roomStore := db.NewMongoRoomStore(client, hotelStore)
-	hotelHandler := api.NewHotelHandler(hotelStore, roomStore)
+		// handlers init
+		userHandler  = api.NewUserHandler(&store)
+		hotelHandler = api.NewHotelHandler(&store)
+		app          = fiber.New(fiber.Config{
+			ErrorHandler: errorHandler,
+		})
 
-	app := fiber.New(fiber.Config{
-		ErrorHandler: errorHandler,
-	})
-	app.Use(recover.New())
-	apiv1 := app.Group("/api/v1")
+		apiNoAuth = app.Group("/api/")
+		apiv1     = app.Group("/api/v1", middeware.JWTAuthentication)
+	)
+
+	// auth handlers
+	apiNoAuth.Post("/auth", userHandler.HandleAuthenticate)
 
 	// user handlers
 	apiv1.Get("/users", userHandler.HandlerGetUsers)
@@ -52,6 +64,7 @@ func main() {
 
 	// hotel handlers
 	apiv1.Get("/hotels", hotelHandler.HandleGetHotels)
+	apiv1.Get("/hotels/:id", hotelHandler.HandleGetHotel)
 	apiv1.Get("/hotels/:id/rooms", hotelHandler.HandleGetRooms)
 
 	err = app.Listen(*listenAddr)

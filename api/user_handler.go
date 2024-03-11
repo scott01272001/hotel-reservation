@@ -2,7 +2,7 @@ package api
 
 import (
 	"errors"
-
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/scott/hotel-reservation/db"
 	"github.com/scott/hotel-reservation/types"
@@ -10,18 +10,34 @@ import (
 )
 
 type UserHandler struct {
-	userStore db.UserStore
+	store *db.Store
 }
 
-func NewUserHandler(userStore db.UserStore) *UserHandler {
+func NewUserHandler(store *db.Store) *UserHandler {
 	return &UserHandler{
-		userStore: userStore,
+		store: store,
 	}
+}
+
+type AuthParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *UserHandler) HandleAuthenticate(c *fiber.Ctx) error {
+	var authParams AuthParams
+	if err := c.BodyParser(&authParams); err != nil {
+		return err
+	}
+
+	fmt.Println(authParams)
+
+	return nil
 }
 
 func (h *UserHandler) HandleDeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
-	if err := h.userStore.DeleteUser(c.Context(), id); err != nil {
+	if err := h.store.User.DeleteUser(c.Context(), id); err != nil {
 		return err
 	}
 	return c.JSON(map[string]string{"deleted": id})
@@ -44,7 +60,7 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 		return c.JSON(errors)
 	}
 
-	updated, err := h.userStore.UpdateUser(c.Context(), userId, &params)
+	updated, err := h.store.User.UpdateUser(c.Context(), userId, &params)
 	if err != nil {
 		return err
 	}
@@ -52,7 +68,7 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
-	var params types.CreateUserparam
+	var params types.CreateUserParam
 	if err := c.BodyParser(&params); err != nil {
 		return err
 	}
@@ -70,7 +86,7 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
+	insertedUser, err := h.store.User.InsertUser(c.Context(), user)
 	if err != nil {
 		return err
 	}
@@ -79,7 +95,7 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 
 func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
 	id := c.Params("id")
-	user, err := h.userStore.GetUserById(c.Context(), id)
+	user, err := h.store.User.GetUserById(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return c.JSON(map[string]string{"error": "not found"})
@@ -90,7 +106,7 @@ func (h *UserHandler) HandlerGetUser(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlerGetUsers(c *fiber.Ctx) error {
-	users, err := h.userStore.GetUsers(c.Context())
+	users, err := h.store.User.GetUsers(c.Context())
 	if err != nil {
 		return err
 	}
